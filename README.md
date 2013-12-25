@@ -1,0 +1,4 @@
+varhacks
+========
+
+Various Go hacks
