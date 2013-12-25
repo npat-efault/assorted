@@ -1,8 +1,8 @@
 package bintree_test
 
 import (
-	"efault.net/varhacks/bintree"
 	"fmt"
+	"github.com/npat-efault/varhacks/bintree"
 )
 
 // Type for the element keys
