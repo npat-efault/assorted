@@ -15,6 +15,12 @@ else
    nn=new${qn^}
 fi
 
+
+cat <<EOF
+// Auto-generated. !! DO NOT EDIT !!
+// Generated: $(date)
+
+EOF
 gofmt -r "PACKAGE -> $pkg" \
 | gofmt -r "NewQ -> $nn" \
 | gofmt -r "Q -> $qn" \
