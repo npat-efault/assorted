@@ -1,4 +1,4 @@
-// Package queue provides three simple FIFO queue implementations: CQ,
+// Package queue provides three simple FIFO queue implementations. CQ,
 // which is based on channels, and SQ and SQU which are based on
 // slices. All queues have fixed capacities (specified at creation
 // time) and support the typical Push / Pop operations. SQ and SQU are
