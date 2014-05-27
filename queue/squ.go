@@ -1,5 +1,4 @@
 // Auto-generated. !! DO NOT EDIT !!
-// Generated: Tue May 27 22:55:54 EEST 2014
 
 package queue
 

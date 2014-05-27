@@ -18,7 +18,6 @@ fi
 
 cat <<EOF
 // Auto-generated. !! DO NOT EDIT !!
-// Generated: $(date)
 
 EOF
 gofmt -r "PACKAGE -> $pkg" \
