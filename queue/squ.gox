@@ -1,0 +1,69 @@
+package PACKAGE
+
+// Fifo Q made with a slice. *NOT* THREAD SAFE.
+type Q struct {
+	sz uint32   /* queue size */
+	m  uint32   /* queue mask (sz - 1) */
+	s  uint32   /* start index */
+	e  uint32   /* end index */
+	b  []ELTYPE /* buffer */
+}
+
+// New allocates and returns a new Q with space for sz elements.
+func NewQ(sz int) *Q {
+	if uint32(sz)&(uint32(sz)-1) != 0 {
+		panic("SQU: invalid Q size (not a power of 2)")
+	}
+	sq := &Q{sz: uint32(sz), m: uint32(sz) - 1, s: 0, e: 0}
+	sq.b = make([]ELTYPE, sz, sz)
+	return sq
+}
+
+// Empty tests if Q is empty.
+func (sq *Q) Empty() bool {
+	return sq.s == sq.e
+}
+
+// Full tests if Q is full.
+func (sq *Q) Full() bool {
+	return sq.e-sq.s == sq.sz
+}
+
+// Len returns the number of elements waiting in the Q.
+func (sq *Q) Len() int {
+	return int(sq.e - sq.s)
+}
+
+// Cap returns the capacity of the Q (# of element slots).
+func (sq *Q) Cap() int {
+	return int(sq.sz)
+}
+
+// Peek returns the first element in the Q, without removing
+// it. Panics if Q is empty.
+func (sq *Q) Peek() ELTYPE {
+	if sq.Empty() {
+		panic("SQU: peek at empty Q")
+	}
+	return sq.b[sq.s&sq.m]
+}
+
+// Pop removes the first element from the Q and returns it. Panics if
+// Q is empty.
+func (sq *Q) Pop() ELTYPE {
+	if sq.Empty() {
+		panic("SQU: pop from empty Q")
+	}
+	i := sq.s & sq.m
+	sq.s++
+	return sq.b[i]
+}
+
+// Push adds element "e" to the tail of the Q. Panics if Q is full.
+func (sq *Q) Push(e ELTYPE) {
+	if sq.Full() {
+		panic("SQU: push to full Q")
+	}
+	sq.b[sq.e&sq.m] = e
+	sq.e++
+}

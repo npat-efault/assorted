@@ -1,0 +1,46 @@
+package PACKAGE
+
+// Fifo Q made with channels. Thread safe.
+type Q chan ELTYPE
+
+// New allocates and returns a new Q with space for sz elements.
+func NewQ(sz int) Q {
+	return make(Q, sz)
+}
+
+// Empty tests if Q is empty.
+func (cq Q) Empty() bool {
+	return len(cq) == 0
+}
+
+// Full tests if Q is full.
+func (cq Q) Full() bool {
+	return len(cq) == cap(cq)
+}
+
+// Len returns the number of elements waiting in the Q.
+func (cq Q) Len() int {
+	return len(cq)
+}
+
+// Cap returns the capacity of the Q (# of element slots).
+func (cq Q) Cap() int {
+	return cap(cq)
+}
+
+// Pop removes the first element from the Q and returns it. Panics if
+// Q is empty.
+func (cq Q) Pop() ELTYPE {
+	if cq.Empty() {
+		panic("CQ: pop from empty Q")
+	}
+	return <-cq
+}
+
+// Push adds element "e" to the tail of the Q. Panics if Q is full.
+func (cq Q) Push(e ELTYPE) {
+	if cq.Full() {
+		panic("CQ: push to full Q")
+	}
+	cq <- e
+}
