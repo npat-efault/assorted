@@ -1,6 +1,9 @@
-// chanio provides a packetized channel interface for io.Readers and
-// io.Writers (actually io.ReadClosers and io.WriteClosers). It
-// implements two types: Rx (receiver) and Tx (transmitter).
+// Package chanio provides a packetized channel interface for
+// io.Readers and io.Writers (actually io.ReadClosers and
+// io.WriteClosers). It implements two types: Rx (receiver) and Tx
+// (transmitter). See exmple in:
+//
+//     chanio/examples/simple.go
 //
 package chanio
 
@@ -12,8 +15,8 @@ import (
 var ErrClosed = errors.New("Rx/Tx already closed")
 
 type Pool interface {
-	Get() interface{}
-	Put(interface{})
+	Get() []byte
+	Put([]byte)
 }
 
 // Packet is the type of data received from the Rx.Pck() channel.
@@ -30,7 +33,6 @@ type Rx struct {
 	pool     Pool
 	pck      chan Packet
 	quit     chan struct{}
-	done     chan struct{}
 }
 
 // NewRx creates and returns an Rx receiver. It spawns a goroutine
@@ -48,7 +50,6 @@ func NewRx(r io.ReadCloser, maxPckSz int, pool Pool) *Rx {
 	rx.pool = pool
 	rx.pck = make(chan Packet)
 	rx.quit = make(chan struct{})
-	rx.done = make(chan struct{})
 	go rx.run()
 	return rx
 }
@@ -70,7 +71,7 @@ func (rx *Rx) Close() error {
 	}
 	err := rx.r.Close()
 	rx.quit <- struct{}{}
-	close(rx.quit) // Concurent calls to rx.Close will panic
+	close(rx.quit) // Concurent calls to rx.Close may panic
 	rx.pck = nil
 	return err
 }
@@ -83,12 +84,13 @@ func (rx *Rx) run() {
 	}
 	for {
 		if rx.pool != nil {
-			var n int
-			if pp := rx.pool.Get(); pp != nil {
-				p = pp.([]byte)[:rx.maxPckSz]
+			p = rx.pool.Get()
+			if p != nil {
+				p = p[:rx.maxPckSz]
 			} else {
 				p = make([]byte, rx.maxPckSz)
 			}
+			var n int
 			n, err = rx.r.Read(p)
 			p = p[:n]
 		} else {
@@ -143,7 +145,7 @@ func (tx *Tx) Close() error {
 	}
 	err := tx.w.Close()
 	tx.quit <- struct{}{}
-	close(tx.quit) // Concur. calls to tx.Close/Drain will panic
+	close(tx.quit) // Concur. calls to tx.Close/Drain may panic
 	tx.pck = nil
 	tx.err = nil
 	return err
@@ -155,7 +157,7 @@ func (tx *Tx) Drain() error {
 	}
 	tx.quit <- struct{}{}
 	err := tx.w.Close()
-	close(tx.quit) // Concur. calls to tx.Close/Drain will panic
+	close(tx.quit) // Concur. calls to tx.Close/Drain may panic
 	tx.pck = nil
 	tx.err = nil
 	return err
