@@ -103,3 +103,64 @@ func TestFakeIOReadClose(t *testing.T) {
 		t.Fatal("FakeIO not closed:", n, err)
 	}
 }
+
+func doTestWrite(t *testing.T, w *FakeIO, data []byte,
+	limit, errAfter, errEvery int, dly time.Duration) {
+
+	for i, nn := 0, 0; nn < len(data); i++ {
+		var n int
+		var err error
+		t0 := time.Now()
+		if len(data)-nn >= limit {
+			n, err = w.Write(data[nn : nn+limit])
+		} else {
+			n, err = w.Write(data[nn:])
+		}
+		t1 := time.Now()
+		if errAfter != 0 && i+1 > errAfter {
+			if err != ErrPermanent {
+				t.Fatalf("%d: Err not ErrPerm: %v", i, err)
+			}
+			return
+		} else if errEvery != 0 &&
+			(i+1)%errEvery == 0 &&
+			err != ErrTemporary {
+			t.Fatalf("%d: Err not ErrTemp: %v", i, err)
+		}
+		if t0.Add(dly).After(t1) {
+			t.Fatalf("%d: Short delay", i)
+		}
+		nn += n
+	}
+	if !bytes.Equal(w.Bytes(), data) {
+		t.Fatalf("Data not equal!")
+	}
+}
+
+func TestFakeIOWrite0(t *testing.T) {
+	data := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	limit := 2
+	errAfter := 0
+	errEvery := 2
+	dly := 200 * time.Millisecond
+	w := NewFakeIO(
+		0,
+		errAfter,
+		errEvery,
+		dly)
+	doTestWrite(t, w, data, limit, errAfter, errEvery, dly)
+}
+
+func TestFakeIOWrite1(t *testing.T) {
+	data := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	limit := 2
+	errAfter := 4
+	errEvery := 2
+	dly := 200 * time.Millisecond
+	w := NewFakeIO(
+		0,
+		errAfter,
+		errEvery,
+		dly)
+	doTestWrite(t, w, data, limit, errAfter, errEvery, dly)
+}

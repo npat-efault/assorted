@@ -44,7 +44,7 @@ type FakeIO struct {
 // after which all subsequent Read or Write calls will fail with
 // ErrPermanent. Argument "errEvery" causes the buffer to fail every
 // "errEvery" Read or Write call with ErrTemporary (e.g if "errEvery"
-// == 4, the 4th, 8th, 12th, etc. calls will fail). Read and Write
+// == 2, the 2nd, 4th, 6th, etc. calls will fail). Read and Write
 // calls are counted separately towards "errAfter" and
 // "errEvery". Argument "delay" causes Read and Write operations to
 // delay for the specified amount before they return (either
@@ -61,14 +61,20 @@ func NewFakeIO(limit, errAfter, errEvery int, delay time.Duration) *FakeIO {
 	return f
 }
 
+// FillString fills the yet unread part of the buffer with data from
+// the string.
 func (f *FakeIO) FillString(s string) {
 	f.buff.WriteString(s)
 }
 
+// FillBytes fills the yet unread part of the buffer with data from
+// the byte-slice.
 func (f *FakeIO) FillBytes(b []byte) {
 	f.buff.Write(b)
 }
 
+// FillFile fills the yet unread part of the buffer with data from
+// the named file.
 func (f *FakeIO) FillFile(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -79,8 +85,13 @@ func (f *FakeIO) FillFile(filename string) error {
 	return err
 }
 
-// Closes the FakeIO buffer. Ongoing and subsequent Read, Write, and
-// Close calls will fail with ErrClosed. After Close, in order to
+// Bytes returns the yet-unread data in the buffer.
+func (f *FakeIO) Bytes() []byte {
+	return f.buff.Bytes()
+}
+
+// Close closes the FakeIO buffer. Ongoing and subsequent Read, Write,
+// and Close calls will fail with ErrClosed. After Close, in order to
 // reuse the buffer, you must call Init (and possibly FillXXX)
 // again. It *is* ok to call Close from a different goroutine,
 // concurently with ongoing Read and Write operations on the same
