@@ -2,6 +2,7 @@ package bintree_test
 
 import (
 	"fmt"
+
 	"github.com/npat-efault/gohacks/bintree"
 )
 
@@ -45,7 +46,7 @@ func Example() {
 		var ok bool
 		tree, ok = tree.Insert(bintree.New(e), true)
 		if !ok {
-			fmt.Println("Elem %d already in tree!", e.k)
+			fmt.Printf("Elem %d already in tree!\n", e.k)
 		}
 	}
 

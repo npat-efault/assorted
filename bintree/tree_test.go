@@ -87,11 +87,11 @@ func TestInsert(t *testing.T) {
 	tree = mktree(elems)
 	tree, ok = tree.Insert(New(elems[0]), false)
 	if !ok {
-		t.Fatalf("cannot ins dup %d with unique == false")
+		t.Fatalf("cannot ins dup %d with unique == false", elems[0])
 	}
 	tree, ok = tree.Insert(New(elems[0]), true)
 	if ok {
-		t.Fatalf("ins dup %d with unique == true")
+		t.Fatalf("ins dup %d with unique == true", elems[0])
 	}
 }
 
@@ -115,7 +115,7 @@ func TestFind(t *testing.T) {
 			t.Fatalf("elem %d, not found", e)
 		}
 		if v.(Element) != e {
-			t.Fatalf("elem found %d != %d", v, e)
+			t.Fatalf("elem found %d != %d", v.(Element), e)
 		}
 	}
 	_, ok := tree.Find(Element(nelems + 1))
