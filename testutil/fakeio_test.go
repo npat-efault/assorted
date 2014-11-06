@@ -13,7 +13,7 @@ type Resp struct {
 	data []byte
 }
 
-func doTestRead(t *testing.T, r *FakeIO, resp []Resp, dly time.Duration) {
+func doTestRead(t *testing.T, r *FakeIO, resp []Resp) {
 	p := make([]byte, 10)
 	for i := range resp {
 		t0 := time.Now()
@@ -23,12 +23,12 @@ func doTestRead(t *testing.T, r *FakeIO, resp []Resp, dly time.Duration) {
 			t.Fatalf("%d: n(%d) != %d", i, n, resp[i].n)
 		}
 		if err != resp[i].err {
-			t.Fatalf("%d: Bad err: %v", i, err)
+			t.Fatalf("%d: Bad err: %s", i, err)
 		}
 		if !bytes.Equal(p[:n], resp[i].data) {
 			t.Fatalf("%d: Data not equal!", i)
 		}
-		if t0.Add(dly).After(t1) {
+		if t0.Add(r.Delay).After(t1) {
 			t.Fatalf("%d: Short delay", i)
 		}
 	}
@@ -49,14 +49,13 @@ func TestFakeIORead0(t *testing.T) {
 		{n: 0, err: ErrPermanent, data: []byte{}},
 		{n: 0, err: ErrPermanent, data: []byte{}},
 	}
-	dly := 200 * time.Millisecond
-	r := NewFakeIO(
-		2,   // limit
-		9,   // errAfter
-		2,   // errEvery
-		dly) // delay
+	r := NewFakeIO()
+	r.Limit = 2
+	r.ErrAfter = 9
+	r.ErrEvery = 2
+	r.Delay = 200 * time.Millisecond
 	r.FillBytes(data)
-	doTestRead(t, r, resp, dly)
+	doTestRead(t, r, resp)
 }
 
 func TestFakeIORead1(t *testing.T) {
@@ -77,22 +76,18 @@ func TestFakeIORead1(t *testing.T) {
 		{n: 0, err: io.EOF, data: []byte{}},
 		{n: 0, err: io.EOF, data: []byte{}},
 	}
-	dly := 200 * time.Millisecond
-	r := NewFakeIO(
-		2,   // limit
-		0,   // errAfter
-		2,   // errEvery
-		dly) // delay
+	r := NewFakeIO()
+	r.Limit = 2
+	r.ErrAfter = 0
+	r.ErrEvery = 2
+	r.Delay = 200 * time.Millisecond
 	r.FillBytes(data)
-	doTestRead(t, r, resp, dly)
+	doTestRead(t, r, resp)
 }
 
 func TestFakeIOReadClose(t *testing.T) {
-	r := NewFakeIO(
-		0,             // limit
-		0,             // errAfter
-		0,             // errEvery
-		2*time.Second) // delay
+	r := NewFakeIO()
+	r.Delay = 2 * time.Second
 	go func() {
 		time.Sleep(200 * time.Millisecond)
 		r.Close()
@@ -104,9 +99,7 @@ func TestFakeIOReadClose(t *testing.T) {
 	}
 }
 
-func doTestWrite(t *testing.T, w *FakeIO, data []byte,
-	limit, errAfter, errEvery int, dly time.Duration) {
-
+func doTestWrite(t *testing.T, w *FakeIO, data []byte, limit int) {
 	for i, nn := 0, 0; nn < len(data); i++ {
 		var n int
 		var err error
@@ -117,50 +110,40 @@ func doTestWrite(t *testing.T, w *FakeIO, data []byte,
 			n, err = w.Write(data[nn:])
 		}
 		t1 := time.Now()
-		if errAfter != 0 && i+1 > errAfter {
+		if w.ErrAfter != 0 && i+1 > w.ErrAfter {
 			if err != ErrPermanent {
-				t.Fatalf("%d: Err not ErrPerm: %v", i, err)
+				t.Fatalf("%d: Err not ErrPerm: %s", i, err)
 			}
 			return
-		} else if errEvery != 0 &&
-			(i+1)%errEvery == 0 &&
+		} else if w.ErrEvery != 0 &&
+			(i+1)%w.ErrEvery == 0 &&
 			err != ErrTemporary {
-			t.Fatalf("%d: Err not ErrTemp: %v", i, err)
+			t.Fatalf("%d: Err not ErrTemp: %s", i, err)
 		}
-		if t0.Add(dly).After(t1) {
+		if t0.Add(w.Delay).After(t1) {
 			t.Fatalf("%d: Short delay", i)
 		}
 		nn += n
 	}
 	if !bytes.Equal(w.Bytes(), data) {
-		t.Fatalf("Data not equal!")
+		t.Fatal("Data not equal!")
 	}
 }
 
 func TestFakeIOWrite0(t *testing.T) {
 	data := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	limit := 2
-	errAfter := 0
-	errEvery := 2
-	dly := 200 * time.Millisecond
-	w := NewFakeIO(
-		0,
-		errAfter,
-		errEvery,
-		dly)
-	doTestWrite(t, w, data, limit, errAfter, errEvery, dly)
+	w := NewFakeIO()
+	w.ErrAfter = 0
+	w.ErrEvery = 2
+	w.Delay = 200 * time.Millisecond
+	doTestWrite(t, w, data, 2)
 }
 
 func TestFakeIOWrite1(t *testing.T) {
 	data := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	limit := 2
-	errAfter := 4
-	errEvery := 2
-	dly := 200 * time.Millisecond
-	w := NewFakeIO(
-		0,
-		errAfter,
-		errEvery,
-		dly)
-	doTestWrite(t, w, data, limit, errAfter, errEvery, dly)
+	w := NewFakeIO()
+	w.ErrAfter = 4
+	w.ErrEvery = 2
+	w.Delay = 200 * time.Millisecond
+	doTestWrite(t, w, data, 2)
 }
