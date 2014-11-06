@@ -1,4 +1,4 @@
-varhacks
-========
+gohacks
+=======
 
 Various Go hacks

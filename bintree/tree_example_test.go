@@ -2,7 +2,7 @@ package bintree_test
 
 import (
 	"fmt"
-	"github.com/npat-efault/varhacks/bintree"
+	"github.com/npat-efault/gohacks/bintree"
 )
 
 // Type for the element keys

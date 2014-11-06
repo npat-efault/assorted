@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/npat-efault/varhacks/pool"
-	"github.com/npat-efault/varhacks/testutil"
+	"github.com/npat-efault/gohacks/pool"
+	"github.com/npat-efault/gohacks/testutil"
 )
 
 func doTestRx(t *testing.T, data []byte, errEvery int, pl Pool) {
