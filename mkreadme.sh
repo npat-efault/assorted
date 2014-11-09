@@ -9,4 +9,8 @@ EOF
 
 go list -f '- **{{ .Name }}:** {{ .Doc }}' github.com/npat-efault/gohacks/...
 
-echo
+cat <<EOF
+
+[Documentation at godoc.org](https://godoc.org/github.com/npat-efault/gohacks) - 
+[![GoDoc](https://godoc.org/github.com/npat-efault/gohacks?status.svg)](https://godoc.org/github.com/npat-efault/gohacks)
+EOF
