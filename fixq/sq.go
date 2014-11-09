@@ -1,6 +1,6 @@
 // Auto-generated. !! DO NOT EDIT !!
 
-package queue
+package fixq
 
 import "sync"
 

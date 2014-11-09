@@ -2,31 +2,31 @@
 SRC = cq.go sq.go squ.go
 
 build:: ${SRC}
-	go build ${GFLAGS}
+	go build ${BF}
 
 install:: ${SRC}
-	go install ${GFLAGS}
+	go install ${IF}
 
 vet:: ${SRC}
-	go vet ${GFLAGS}
+	go vet ${VF}
 
 test:: ${SRC}
-	go test ${GFLAGS}
+	go test ${TF}
 
 clean::
 	rm -f ${SRC}
 	rm -f *~
 	rm -f *.out
-	go clean ${GFLAGS}
+	go clean ${CF}
 
 cq.go : cq.gox
-	./mkq.bash queue CQ 'interface{}' < cq.gox > cq.go
+	./mkq.bash fixq CQ 'interface{}' < cq.gox > cq.go
 	chmod -w cq.go
 
 sq.go : sq.gox
-	./mkq.bash queue SQ 'interface{}' < sq.gox > sq.go
+	./mkq.bash fixq SQ 'interface{}' < sq.gox > sq.go
 	chmod -w sq.go
 
 squ.go : squ.gox
-	./mkq.bash queue SQU 'interface{}' < squ.gox > squ.go
+	./mkq.bash fixq SQU 'interface{}' < squ.gox > squ.go
 	chmod -w squ.go

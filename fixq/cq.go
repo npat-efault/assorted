@@ -1,6 +1,6 @@
 // Auto-generated. !! DO NOT EDIT !!
 
-package queue
+package fixq
 
 // Fifo Q made with channels. Thread safe.
 type CQ chan interface{}

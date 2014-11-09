@@ -1,6 +1,6 @@
 // Auto-generated. !! DO NOT EDIT !!
 
-package queue
+package fixq
 
 // Fifo Q made with a slice. *NOT* THREAD SAFE.
 type SQU struct {
