@@ -1,5 +1,4 @@
-gohacks
-=======
+# gohacks [![GoDoc](https://godoc.org/github.com/npat-efault/gohacks?status.svg)](https://godoc.org/github.com/npat-efault/gohacks)
 
 Various Go hacks.
 
@@ -11,5 +10,5 @@ Various Go hacks.
 - **pool:** Package pool implements simple object recycling pools.
 - **testutil:** 
 
-[Documentation at godoc.org](https://godoc.org/github.com/npat-efault/gohacks) - 
-[![GoDoc](https://godoc.org/github.com/npat-efault/gohacks?status.svg)](https://godoc.org/github.com/npat-efault/gohacks)
+[Documentation at godoc.org.](https://godoc.org/github.com/npat-efault/gohacks)
+
