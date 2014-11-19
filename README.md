@@ -11,4 +11,3 @@ Various Go hacks.
 - **testutil:** 
 
 [Documentation at godoc.org.](https://godoc.org/github.com/npat-efault/gohacks)
-
