@@ -47,6 +47,8 @@ type ErrT struct {
 	Msg   string
 }
 
+// Error formats ErrT as a string. Formating depends on the value of
+// the global configuration flag ShowLocations.
 func (e *ErrT) Error() string {
 	if !ShowLocations || !e.Loc.IsSet() {
 		return e.Msg
@@ -54,6 +56,8 @@ func (e *ErrT) Error() string {
 	return e.Loc.String() + ": " + e.Msg
 }
 
+// Location returns ErrT's location. If no location is set for the
+// error, then a zero-valued Location struct is returned.
 func (e *ErrT) Location() Location {
 	return e.Loc
 }
