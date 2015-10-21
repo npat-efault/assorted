@@ -87,8 +87,8 @@ func Err(flags uint, msg string) error {
 
 // Errf creates and returns a new error using a Printf-like
 // interface. See also function Err.
-func Errf(flags uint, format string, rest ...interface{}) error {
-	e := &ErrT{Flags: flags, Msg: fmt.Sprintf(format, rest...)}
+func Errf(flags uint, format string, a ...interface{}) error {
+	e := &ErrT{Flags: flags, Msg: fmt.Sprintf(format, a...)}
 	e.Loc.Set(1)
 	return e
 }
@@ -104,8 +104,8 @@ func ErrNL(flags uint, msg string) error {
 // ErrfNL is similar with Err, with the difference that ErrNL does not
 // set the error location. It can be used to create a global error
 // value that can be returned from multiple source locations.
-func ErrfNL(flags uint, format string, rest ...interface{}) error {
-	e := &ErrT{Flags: flags, Msg: fmt.Sprintf(format, rest...)}
+func ErrfNL(flags uint, format string, a ...interface{}) error {
+	e := &ErrT{Flags: flags, Msg: fmt.Sprintf(format, a...)}
 	return e
 }
 
