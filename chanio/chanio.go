@@ -5,12 +5,15 @@
 package chanio
 
 import (
-	"errors"
 	"io"
 	"net"
+
+	"github.com/npat-efault/gohacks/errors"
 )
 
-var ErrClosed = errors.New("Rx/Tx/Lx already closed")
+// ErrClosed has Closed() == true and tests true with predicate
+// function errors.IsClosed()
+var ErrClosed = errors.ErrNL(errors.ErrClosed, "Rx/Tx/Lx already closed")
 
 type Pool interface {
 	Get() []byte
