@@ -2,15 +2,20 @@ package testutil
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"os"
 	"time"
+
+	"github.com/npat-efault/gohacks/errors"
 )
 
 var (
-	ErrClosed    = errors.New("Closed")
-	ErrTemporary = errors.New("Temporary Error")
+	// ErrClosed has Closed() == true, and tests true with
+	// errors.IsClosed().
+	ErrClosed = errors.ErrNL(errors.ErrClosed, "Closed")
+	// ErrTemporary has Temporary() == true, and tests true with
+	// errors.IsTemporary().
+	ErrTemporary = errors.ErrNL(errors.ErrTemporary, "Temporary Error")
 	ErrPermanent = errors.New("Permanent Error")
 )
 
