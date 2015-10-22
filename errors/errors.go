@@ -105,15 +105,17 @@ func Errf(flags uint, format string, a ...interface{}) error {
 
 // ErrNL is similar with Err, with the difference that ErrNL does not
 // set the error location. It can be used to create a global error
-// value that can be returned from multiple source locations.
+// value that can be returned from multiple source locations. See also
+// function Err.
 func ErrNL(flags uint, msg string) error {
 	e := &ErrT{Flags: flags, Msg: msg}
 	return e
 }
 
-// ErrfNL is similar with Err, with the difference that ErrNL does not
-// set the error location. It can be used to create a global error
-// value that can be returned from multiple source locations.
+// ErrfNL is similar with Errf, with the difference that ErrNL does
+// not set the error location. It can be used to create a global error
+// value that can be returned from multiple source locations. See also
+// function Errf.
 func ErrfNL(flags uint, format string, a ...interface{}) error {
 	e := &ErrT{Flags: flags, Msg: fmt.Sprintf(format, a...)}
 	return e
@@ -138,8 +140,8 @@ func IsTemporary(e error) bool {
 }
 
 // IsTimeout is a predicate that tests if the error indicates a
-// Timeout. It does so by checking if the concrete error type has a
-// method with signature:
+// timeout condition. It does so by checking if the concrete error
+// type has a method with signature:
 //
 //    Timeout() bool
 //
