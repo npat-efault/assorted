@@ -28,6 +28,7 @@ var ShowLocations bool = true
 const (
 	ErrTimeout uint = 1 << iota
 	ErrTemporary
+	ErrClosed
 
 	ErrBitCustom = iota
 )
@@ -70,6 +71,11 @@ func (e *ErrT) Timeout() bool {
 // Temporary checks if Err has the ErrTemporary flag set
 func (e *ErrT) Temporary() bool {
 	return e.Flags&ErrTemporary != 0
+}
+
+// Closed checks if Err has the ErrClosed flag set
+func (e *ErrT) Closed() bool {
+	return e.Flags&ErrClosed != 0
 }
 
 // New creates and returns a new error. The error is not flagged with
@@ -145,6 +151,24 @@ func IsTimeout(e error) bool {
 	}
 	if et, ok := e.(tmoError); ok {
 		return et.Timeout()
+	}
+	return false
+}
+
+// IsClosed is a predicate that tests if the error signifies an
+// attempt to access a closed endpoint. It does so by checking if the
+// concrete error type has a method with signature:
+//
+//    Closed() bool
+//
+// and if that method returns "true" when called.
+//
+func IsClosed(e error) bool {
+	type closedError interface {
+		Closed() bool
+	}
+	if ec, ok := e.(closedError); ok {
+		return ec.Closed()
 	}
 	return false
 }
