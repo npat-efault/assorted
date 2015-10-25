@@ -14,12 +14,13 @@ Various Go hacks.
 - **crc16:** Package crc16 implements the 16-bit cyclic redundancy
     check, or CRC-16, checksum.
 
-
 - **errors:** Package errors implements functions to manipulate
     errors. It can be used as a drop-in replacement to the very basic
     stdlib's "errors" package, and provides additional functionality.
 
 - **fixq:** Package fixq provides three simple FIFO queue implementations.
+
+- **gctl:** Package gctl provides simple goroutine control methods.
 
 - **pool:** Package pool implements simple object recycling pools.
 
