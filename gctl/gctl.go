@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrStarted    = errors.Errf(0, "Goroutine already started")
-	ErrNotStarted = errors.Errf(0, "Goroutine has not been started")
+	ErrStarted    = errors.New("Goroutine already started")
+	ErrNotStarted = errors.New("Goroutine has not been started")
 )
 
 // Gcx is a goroutine context. A pointer to a Gcx structure acts like
@@ -37,10 +37,12 @@ var GcxZero Gcx
 // context c, and returns the channel upon which the goroutine should
 // wait for termination requests.
 func (c *Gcx) ChKill() <-chan struct{} {
-	// Lock?
+	c.Lock()
 	if c.kill == nil {
+		c.Unlock()
 		panic("Gcx.ChKill: Gcx is not a running goroutine.")
 	}
+	c.Unlock()
 	return c.kill
 }
 
@@ -48,11 +50,19 @@ func (c *Gcx) ChKill() <-chan struct{} {
 // with context c has already been started, returns with
 // ErrStarted. The goroutine terminates when function f returns. The
 // return value of f is the goroutine's exit status, which is returned
-// by method Gcx.Wait(). Normally, once a goroutine with context c has
-// run (and finished) you cannot start another one with the same
-// context (as this can cause races, if you are not careful). If you
-// want to do so, nevertheless, you must first reset the context by
-// assigning to it the value GcxZero.
+// by method Gcx.Wait().
+//
+// Normally, once a goroutine with context c has run (and finished)
+// you cannot start another one with the same context (as this can
+// cause races, if you are not careful). Instead use a new context for
+// each goroutine you start.
+//
+// CAVEAT: Nevertheless, if you want to reuse the same context, you
+// must first reset it by assigning to it the value GcxZero. In order
+// to do so safely, you must be certain that the goroutine has indeed
+// finished and that no-one will subcequently use the context to refer
+// to the old goroutine. Again, it is easier not to reuse contexts,
+// and in most cases there is no reason to.
 func (c *Gcx) Go(f func() error) error {
 	c.Lock()
 	defer c.Unlock()
@@ -69,9 +79,15 @@ func (c *Gcx) Go(f func() error) error {
 	go func(c *Gcx, f func() error) {
 		err := f()
 		c.status = err
+		g := c.group
+		// First close, then notify, in order to allow waiting
+		// for an individual goroutine with Gcx.Wait, even if
+		// it belongs to a group.
 		close(c.dead)
-		if c.group != nil {
-			c.group.notify <- c
+		// Don't access c after this. Goroutine c is dead, and
+		// they are allowed to zero-out c.
+		if g != nil {
+			g.notify <- c
 		}
 	}(c, f)
 	return nil
@@ -81,17 +97,18 @@ func (c *Gcx) Go(f func() error) error {
 // already stopped, it does nothing. If no goroutine with context c
 // has been started, it returns ErrNotStarted. It is ok to call Kill
 // (for the same goroutine) concurrently from multiple goroutines.
-func (c *Gcx) Kill() {
+func (c *Gcx) Kill() error {
 	c.Lock()
 	defer c.Unlock()
 	if c.kill == nil {
 		return ErrNotStarted
 	}
 	if c.signaled {
-		return
+		return nil
 	}
 	c.signaled = true
 	close(c.kill)
+	return nil
 }
 
 // Wait waits for goroutine with context Gcx to finish, and returns
@@ -100,10 +117,12 @@ func (c *Gcx) Kill() {
 // started, it returns ErrNotStarted. It is ok to call Wait (for the
 // same goroutine) concurrently from multiple goroutines.
 func (c *Gcx) Wait() error {
-	// Lock?
+	c.Lock()
 	if c.kill == nil {
+		c.Unlock()
 		return ErrNotStarted
 	}
+	c.Unlock()
 	<-c.dead
 	return c.status
 }
@@ -150,6 +169,7 @@ func (c *Gcx) SetGroup(g *Group) error {
 	}
 	g.init()
 	c.group = g
+	return nil
 }
 
 // Wait waits for one (any) of the goroutines in group g to
@@ -162,12 +182,12 @@ func (c *Gcx) SetGroup(g *Group) error {
 // group has no running goroutines, it returns nil, 0
 func (g *Group) Wait() (c *Gcx, n int) {
 	g.Lock()
-	n := g.n
+	n = g.n
 	g.Unlock()
 	if n == 0 {
 		return nil, n
 	}
-	c := <-g.notify
+	c = <-g.notify
 	g.Lock()
 	g.n--
 	n = g.n
@@ -179,6 +199,6 @@ func (g *Group) Wait() (c *Gcx, n int) {
 func (g *Group) WaitAll() {
 	_, n := g.Wait()
 	for n != 0 {
-		_, n := g.Wait()
+		_, n = g.Wait()
 	}
 }
