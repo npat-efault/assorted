@@ -213,7 +213,6 @@ func (g *Group) Wait() (c *Gcx, xs error) {
 	c = <-g.notify
 	g.mu.Lock()
 	g.n--
-	n = g.n
 	g.mu.Unlock()
 	return c, c.Wait()
 }
@@ -240,7 +239,6 @@ func (g *Group) Poll() (c *Gcx, xs error) {
 	}
 	g.mu.Lock()
 	g.n--
-	n = g.n
 	g.mu.Unlock()
 	return c, c.Wait()
 }
