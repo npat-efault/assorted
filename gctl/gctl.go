@@ -35,7 +35,8 @@ var GcxZero Gcx
 
 // ChKill is intented to be called from within the goroutine with
 // context c, and returns the channel upon which the goroutine should
-// wait for termination requests.
+// wait for a termination request. Termination is requested by closing
+// the channel.
 func (c *Gcx) ChKill() <-chan struct{} {
 	c.mu.Lock()
 	if c.kill == nil {
