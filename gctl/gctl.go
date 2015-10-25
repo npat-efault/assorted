@@ -1,3 +1,8 @@
+// Copyright (c) 2015, Nick Patavalis (npat@efault.net).
+// All rights reserved.
+// Use of this source code is governed by a BSD-style license that can
+// be found in the LICENSE file.
+
 // Package gctl provides simple goroutine control methods.
 package gctl
 
@@ -21,16 +26,18 @@ type Gcx struct {
 	dead     chan struct{}
 	signaled bool
 	status   error
+	group    *Group
 }
 
-// GxcZero is a reset (zero) value for a Gcx goroutine context. See
-// doc of Gcx.Go() method for its use.
+// GxcZero is the zero (reset) value for a Gcx goroutine context. See
+// doc of Gcx.Go method for its use.
 var GcxZero Gcx
 
 // ChKill is intented to be called from within the goroutine with
 // context c, and returns the channel upon which the goroutine should
 // wait for termination requests.
 func (c *Gcx) ChKill() <-chan struct{} {
+	// Lock?
 	if c.kill == nil {
 		panic("Gcx.ChKill: Gcx is not a running goroutine.")
 	}
@@ -54,10 +61,18 @@ func (c *Gcx) Go(f func() error) error {
 	}
 	c.kill = make(chan struct{})
 	c.dead = make(chan struct{})
+	if c.group != nil {
+		c.group.Lock()
+		c.group.n++
+		c.group.Unlock()
+	}
 	go func(c *Gcx, f func() error) {
 		err := f()
 		c.status = err
 		close(c.dead)
+		if c.group != nil {
+			c.group.notify <- c
+		}
 	}(c, f)
 	return nil
 }
@@ -85,6 +100,7 @@ func (c *Gcx) Kill() {
 // started, it returns ErrNotStarted. It is ok to call Wait (for the
 // same goroutine) concurrently from multiple goroutines.
 func (c *Gcx) Wait() error {
+	// Lock?
 	if c.kill == nil {
 		return ErrNotStarted
 	}
@@ -105,9 +121,64 @@ func (c *Gcx) KillWait() error {
 	return c.Wait()
 }
 
+// Group groups together several goroutines. A group is used when one
+// wishes to wait on a group of goroutines and be notified when one
+// (any) of them terminates.
 type Group struct {
 	sync.Mutex
-	n    int
-	g    map[*Gcx]struct{}
-	dead chan *Gcx
+	n      int
+	notify chan *Gcx
+}
+
+func (g *Group) init() {
+	g.Lock()
+	if g.notify == nil {
+		g.notify = make(chan *Gcx)
+	}
+	g.Unlock()
+}
+
+// SetGroup adds goroutine with context c to group g. A goroutine can
+// belong to only one group. A goroutine must be added to the group
+// before it is started with Gcx.Go(). If SetGroup is called for an
+// already running goroutine, it returns ErrStarted.
+func (c *Gcx) SetGroup(g *Group) error {
+	c.Lock()
+	defer c.Unlock()
+	if c.kill != nil {
+		return ErrStarted
+	}
+	g.init()
+	c.group = g
+}
+
+// Wait waits for one (any) of the goroutines in group g to
+// terminate. It returns the context of the goroutine that terminated,
+// and the number of running goroutines remaining in the group. The
+// exit status of the goroutine that terminated can be acquired by
+// subsequently calling the Wait method on the context returned;
+// c.Wait(), in this case, will return immediatelly, since the
+// goroutine has already terminated. If upon entry to Group.Wait the
+// group has no running goroutines, it returns nil, 0
+func (g *Group) Wait() (c *Gcx, n int) {
+	g.Lock()
+	n := g.n
+	g.Unlock()
+	if n == 0 {
+		return nil, n
+	}
+	c := <-g.notify
+	g.Lock()
+	g.n--
+	n = g.n
+	g.Unlock()
+	return c, n
+}
+
+// WaitAll waits for all the goroutines in group g to terminate.
+func (g *Group) WaitAll() {
+	_, n := g.Wait()
+	for n != 0 {
+		_, n := g.Wait()
+	}
 }
