@@ -148,19 +148,18 @@ func (c *Gcx) KillWait() error {
 //
 // You can set the group of a goroutine by calling Gcx.SetGroup. A
 // goroutine is considered member of the group from the time it is
-// started (with Gcx.Go) and until it terminates *and* a call to
-// Group.Wait or Group.Poll returns it's context and
+// started (with Gcx.Go) until it terminates *and* a call to
+// Group.Wait, Group.Poll or Group.Notify returns its
 // exit-status. Getting the goroutine's exit status via Gcx.Wait does
-// *not* remove it from the group; a subsequent Group.Wait or
-// Group.Poll call will still return its context and exit status.
+// *not* remove it from the group.
 //
 // ATTENTION: If a group is garbage-collected (that is, all references
-// to it are dropped) while is still has goroutines for which their
-// exit status has not been retrieved (by calling Group.Wait or
-// Group.Poll) then you program will leak goroutines. Therefore,
-// before dropping a group, make sure you have retrieved the exit
-// status of all its member goroutines using Group.Wait and/or
-// Group.Poll.
+// to it are dropped) while it still has goroutines for which their
+// exit status has not been retrieved (by calling Group.Wait,
+// Group.Poll or Group.Notify) then you program will leak
+// goroutines. Therefore, before dropping a group, make sure you have
+// retrieved the exit status of all its member goroutines using
+// Group.Wait, Group.Poll and/or Group.Notify.
 type Group struct {
 	mu     sync.Mutex
 	n      int
@@ -182,9 +181,9 @@ func (g *Group) init() {
 // it returns ErrStarted.
 //
 // Once added and started, the goroutine is considered member of the
-// group. It remains so until it terminates *and* Group.Wait or
-// Group.Poll returns it's exit status. See doc of Group.Wait for
-// more.
+// group. It remains so until it terminates *and* Group.Wait,
+// Group.Poll, or Group.Notify return its exit status. See doc of
+// Group.Wait for more.
 func (c *Gcx) SetGroup(g *Group) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -198,12 +197,11 @@ func (c *Gcx) SetGroup(g *Group) error {
 
 // Wait waits for one (any) of the goroutines in group g to
 // terminate. It returns the context c of the goroutine that
-// terminated, and it's exit status. If upon entry to Group.Wait, the
+// terminated, and its exit status. If upon entry to Group.Wait, the
 // group has no more goroutines, it returns nil, nil.
 //
-// Once Group.Wait (or Group.Poll) returns a goroutine's context and
-// exit status, then (and only then) the goroutine is no longer
-// considered a member of the group.
+// Once Group.Wait returns a goroutine's context and exit status, then
+// the goroutine is no longer considered a member of the group.
 func (g *Group) Wait() (c *Gcx, xs error) {
 	g.mu.Lock()
 	n := g.n
@@ -223,9 +221,8 @@ func (g *Group) Wait() (c *Gcx, xs error) {
 // there is no goroutine that has terminated (or if the group is
 // empty) it returns nil, nil.
 //
-// Once Group.Poll (or Group.Wait) returns a goroutine's context and
-// exit status, then (and only then) the goroutine is no longer
-// considered a member of the group.
+// Once Group.Poll returns a goroutine's context and exit status, then
+// the goroutine is no longer considered a member of the group.
 func (g *Group) Poll() (c *Gcx, xs error) {
 	g.mu.Lock()
 	n := g.n
@@ -244,9 +241,7 @@ func (g *Group) Poll() (c *Gcx, xs error) {
 	return c, c.Wait()
 }
 
-// Count returns the number of goroutines in the group (i.e the number
-// of goroutines for which Group.Wait or Group.Poll has not returned
-// their status).
+// Count returns the number of goroutines in the group.
 func (g *Group) Count() int {
 	g.mu.Lock()
 	n := g.n
@@ -262,4 +257,32 @@ func (g *Group) WaitAll() {
 	for c != nil {
 		c, _ = g.Wait()
 	}
+}
+
+// ChNotify returns a channel upon which the caller can receive
+// goroutine termination notifications. Each such notification is the
+// context of a goroutine that has terminated. Once a notification is
+// received the caller *MUST ALWAYS* call Group.Notify(), passing to
+// it the received context. Group.Notify will return the goroutine's
+// exit status and the goroutine will no longer be considered a member
+// of the group.
+//
+// ChNotify / Notify are useful when one wishes to multiplex the wait
+// for goroutine termination with other channel operations in a select
+// statement.
+func (g *Group) ChNotify() <-chan *Gcx {
+	g.init()
+	return g.notify
+}
+
+// Notify *MUST ALWAYS* and *ONLY* be called with the contexts
+// received from the channel returned by Group.ChNotify. It returns
+// the respective goroutine's exit status. *ANY* other use of Notify
+// is an error and will leave the group in an invalid internal
+// state. See also Group.ChNotify.
+func (g *Group) Notify(c *Gcx) error {
+	g.mu.Lock()
+	g.n--
+	g.mu.Unlock()
+	return c.Wait()
 }
