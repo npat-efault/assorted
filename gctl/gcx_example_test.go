@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/npat-efault/gohacks/errors"
 	"github.com/npat-efault/gohacks/gctl"
 )
-
-var ErrKilled = errors.New("Killed")
 
 type G struct {
 	gctl.Gcx // Embed goroutine context
@@ -22,7 +19,7 @@ func (g *G) run() error {
 	case <-g.ChKill():
 		// Exit with ErrKilled, if signaled
 		fmt.Printf("Exiting G%d\n", g.Num)
-		return ErrKilled
+		return gctl.ErrKilled
 	case <-time.After(5 * time.Second):
 		// Exit "normally" after 5 seconds
 		return nil
@@ -30,16 +27,13 @@ func (g *G) run() error {
 }
 
 func ExampleGcx() {
-	// Keep track of the goroutines we start using a slice
+	// Keep track of the gcx's we start using a slice
 	gs := make([]*G, 0, 4)
 
-	// Start 4 goroutines
+	// Start 4 goroutines, each in its gcx
 	for i := 0; i < 4; i++ {
-		g := &G{Num: i}
-		if err := g.Go(g.run); err != nil {
-			// Can't really happen
-			fmt.Printf("Failed to start G%d\n", g.Num)
-		}
+		g := &G{Num: i} // g.Gcx is empty
+		g.Go(g.run)     // g.Gcx is active
 		// Add the goroutine we started to the slice
 		gs = append(gs, g)
 	}
@@ -51,14 +45,15 @@ func ExampleGcx() {
 		if err != nil {
 			fmt.Printf("G%d status: %v\n", g.Num, err)
 		}
+		// g.Gcx is dead
 	}
 	// Output:
 	// Exiting G0
-	// G0 status: Killed
+	// G0 status: Gcx context killed
 	// Exiting G1
-	// G1 status: Killed
+	// G1 status: Gcx context killed
 	// Exiting G2
-	// G2 status: Killed
+	// G2 status: Gcx context killed
 	// Exiting G3
-	// G3 status: Killed
+	// G3 status: Gcx context killed
 }

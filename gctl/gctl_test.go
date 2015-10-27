@@ -6,7 +6,6 @@
 package gctl
 
 import (
-	"errors"
 	"math/rand"
 	"strings"
 	"testing"
@@ -61,26 +60,26 @@ func TestGcxChKillPanic(t *testing.T) {
 	t.Fatal("ChKill should panic")
 }
 
-func TestGcxGoErrStarted(t *testing.T) {
+func TestGcxGoPanic(t *testing.T) {
 	var gcx Gcx
-	err := gcx.Go(func() error { return nil })
-	if err != nil {
-		t.Fatalf("gcx.Go: %v != nil", err)
-	}
-	err = gcx.Wait()
+	gcx.Go(func() error { return nil })
+	err := gcx.Wait()
 	if err != nil {
 		t.Fatalf("Wait: %v != nil", err)
 	}
-	err = gcx.Go(func() error { return nil })
-	if err != ErrStarted {
-		t.Fatalf("gcx.Go: %v != ErrStarted", err)
-	}
+	func() {
+		defer func() {
+			x := recover()
+			s, ok := x.(string)
+			if !ok || !strings.HasPrefix(s, "Gcx.Go") {
+				panic(x)
+			}
+		}()
+		gcx.Go(func() error { return nil })
+		t.Fatalf("gcx.Go: No panic on dead gcx")
+	}()
 	gcx = GcxZero
-	err = gcx.Go(func() error { return nil })
-	if err != nil {
-		t.Fatalf("gcx.Go: %v != nil", err)
-	}
-
+	gcx.Go(func() error { return nil })
 }
 
 func TestSGcxGoMany(t *testing.T) {
@@ -133,14 +132,13 @@ loop:
 
 func TestKillWait(t *testing.T) {
 	var c Gcx
-	var ErrKilled = errors.New("Killed")
-	if e := c.Kill(); e != ErrNotStarted {
+	if e := c.Kill(); e != ErrGcxEmpty {
 		t.Fatalf("Gcx.Kill: %v", e)
 	}
-	if e := c.Wait(); e != ErrNotStarted {
+	if e := c.Wait(); e != ErrGcxEmpty {
 		t.Fatalf("Gcx.Wait: %v", e)
 	}
-	e := c.Go(func() error {
+	c.Go(func() error {
 		select {
 		case <-c.ChKill():
 			return ErrKilled
@@ -148,9 +146,6 @@ func TestKillWait(t *testing.T) {
 			return nil
 		}
 	})
-	if e != nil {
-		t.Fatalf("Gcx.Go: %v", e)
-	}
 	// Kill it
 	if e := c.Kill(); e != nil {
 		t.Fatalf("Gcx.Kill: %v", e)
@@ -189,15 +184,21 @@ func TestGroupSet(t *testing.T) {
 	var xs error
 
 	c.Go(func() error { return nil })
-	if e := c.SetGroup(&g); e != ErrStarted {
-		t.Fatalf("Gcx.SetGroup: %v", e)
-	}
+	func() {
+		defer func() {
+			x := recover()
+			s, ok := x.(string)
+			if !ok || !strings.HasPrefix(s, "Gcx.SetGroup") {
+				panic(x)
+			}
+		}()
+		c.SetGroup(&g)
+		t.Fatal("Gcx.Setgroup: No panic for non-empty group")
+	}()
 	c.Wait()
 	c = GcxZero
 
-	if e := c.SetGroup(&g); e != nil {
-		t.Fatalf("Gcx.SetGroup: %v", e)
-	}
+	c.SetGroup(&g)
 	if n := g.Count(); n != 0 {
 		t.Fatalf("Group.Count: %d", n)
 	}
