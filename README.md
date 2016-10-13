@@ -11,9 +11,6 @@ Various Go hacks.
 - **cirq:** Package cirq provides a circular double-ended queue
     implementation.
 
-- **crc16:** Package crc16 implements the 16-bit cyclic redundancy
-    check, or CRC-16, checksum.
-
 - **errors:** Package errors implements functions to manipulate
     errors. It can be used as a drop-in replacement to the very basic
     stdlib's "errors" package, and provides additional functionality.
