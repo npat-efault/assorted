@@ -1,4 +1,4 @@
-# asorted
+# assorted
 
 Various asorted hacks and stuff.
 
