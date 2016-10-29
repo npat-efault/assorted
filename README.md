@@ -1,6 +1,6 @@
 # assorted
 
-Various asorted hacks and stuff.
+Various assorted hacks and stuff.
 
 **Use at your own risk, or better not at all!**
 
